@@ -1,9 +1,15 @@
 import socket
 import threading
+import os
+from os.path import join, dirname
+from dotenv import load_dotenv
 
-# HOST = '54.250.156.130'
-HOST = '127.0.0.1'
-PORT = 50003
+load_dotenv(verbose=True)
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+HOST = os.environ.get('HOST')
+PORT = int(os.environ.get('PORT'))
 SEND_BYTE_LEN = 6
 
 try:

@@ -4,9 +4,16 @@ import sys
 import random
 import copy
 import time
+import os
+from os.path import join, dirname
+from dotenv import load_dotenv
 
-HOST = '127.0.0.1'
-PORT = 50003
+load_dotenv(verbose=True)
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+HOST = os.environ.get('HOST')
+PORT = int(os.environ.get('PORT'))
 SEND_BYTE_LEN = 6
 CLIENTS = 5
 SUCCESS_TARGET_CNT = 3
@@ -37,7 +44,6 @@ def init_dataset():
             if num not in s_target_list:
                 break
         s_target_list.append(num)
-        s_target_list.append(1)
 
     for i in range(FAILURE_TARGET_CNT):
         while True:
@@ -54,16 +60,14 @@ def start_server():
     sock.listen(CLIENTS)
     print("Server is listening at {}:{}".format(HOST, PORT))
 
-    while True:
-        if start_flg:
-            print('Game Start!')
-            break
-        else:
-            print('Game not start')
-            time.sleep(1)
-
     init_dataset()
     print('あたり/ハズレ', s_target_list, f_target_list)
+
+    while True:
+        if start_flg:
+            break
+        time.sleep(1)
+
     while True:
         try:
             con, address = sock.accept()
@@ -91,6 +95,7 @@ def push_handler():
     if int(data[0]) == 0:  # game start
         print('Game Start')
         start_flg = True
+        time.sleep(2)
         for c in clients_list:
             send_result(c, 0)
     elif int(data[0]) == 128:  # game over
@@ -119,6 +124,7 @@ def push_handler():
 
 def receive_handler(con, address):
     # client -> server
+    global start_flg
     while True:
         try:
             data = con.recv(1024)
@@ -131,6 +137,11 @@ def receive_handler(con, address):
             judge_point(data_list, address)
 
             print("[R]{} - {}".format(address, data))
+
+            if start_flg:
+                point_map[address[1]] = 0
+                start_flg = False
+                continue
 
             for c in clients_list:  # send result to client
                 send_result(c, 1)
